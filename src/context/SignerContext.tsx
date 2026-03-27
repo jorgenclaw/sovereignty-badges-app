@@ -122,29 +122,61 @@ export function SignerProvider({ children }: { children: ReactNode }) {
       const uri = `nostrconnect://${sessionPkHex}?relay=${encodeURIComponent(NIP46_RELAY)}&metadata=${encodeURIComponent(metadata)}`;
       setConnectUri(uri);
 
-      // Listen on multiple relays for Amber's NIP-46 response using SimplePool
+      // Listen on multiple relays for Amber's NIP-46 response
       const pool = new SimplePool();
+      const sessionSkHex = bytesToHex(sessionSk);
+
+      // Add debug status to help diagnose connection issues
+      console.log('[NIP-46] Listening for kind:24133 #p=' + sessionPkHex.slice(0, 12) + '... on', NIP46_RELAYS);
 
       return new Promise<string>((resolve, reject) => {
+        let resolved = false;
         const timeout = setTimeout(() => {
-          pool.close(NIP46_RELAYS);
-          setConnecting(false);
-          reject(new Error('NIP-46 connection timed out'));
+          if (!resolved) {
+            pool.close(NIP46_RELAYS);
+            setConnecting(false);
+            reject(new Error('NIP-46 connection timed out'));
+          }
         }, 120_000);
 
+        // Subscribe with broad filter — no `since` (clock skew can cause misses)
+        // Use array of filters as subscribeMany expects
         pool.subscribeMany(
           NIP46_RELAYS,
-          { kinds: [24133], '#p': [sessionPkHex], since: Math.floor(Date.now() / 1000) - 5 },
+          { kinds: [24133], '#p': [sessionPkHex] },
           {
             onevent: async (event) => {
+              if (resolved) return;
               const remotePubkey = event.pubkey;
-              try {
-                // Decrypt using raw nostr-tools nip04 with our session secret key
-                const decrypted = await nip04.decrypt(sessionSk, remotePubkey, event.content);
-                const response = JSON.parse(decrypted);
+              console.log('[NIP-46] Received kind:24133 from', remotePubkey.slice(0, 12) + '...');
 
-                if (response.result === 'ack' || response.result) {
-                  // Connection established - create NConnectSigner on the primary relay
+              // Try NIP-04 decryption first (most common), then try as plain JSON
+              let decrypted: string | null = null;
+              try {
+                decrypted = await nip04.decrypt(sessionSkHex, remotePubkey, event.content);
+              } catch (e1) {
+                console.log('[NIP-46] NIP-04 decrypt failed, trying plain parse');
+                try {
+                  // Some signers send unencrypted or differently formatted responses
+                  JSON.parse(event.content);
+                  decrypted = event.content;
+                } catch {
+                  console.log('[NIP-46] Not parseable either, skipping');
+                  return;
+                }
+              }
+
+              if (!decrypted) return;
+
+              try {
+                const response = JSON.parse(decrypted);
+                console.log('[NIP-46] Parsed response:', JSON.stringify(response).slice(0, 100));
+
+                // Accept any response that looks like an ack
+                if (response.result === 'ack' || response.result || response.id) {
+                  resolved = true;
+
+                  // Connection established — create NConnectSigner on the primary relay
                   const relay = new NRelay1(NIP46_RELAY);
                   relayRef.current = relay;
 
@@ -155,7 +187,14 @@ export function SignerProvider({ children }: { children: ReactNode }) {
                     timeout: 60_000,
                   });
 
-                  const userPubkey = await nip46Signer.getPublicKey();
+                  // Try to get pubkey — this may fail if the signer needs a different relay
+                  let userPubkey: string;
+                  try {
+                    userPubkey = await nip46Signer.getPublicKey();
+                  } catch {
+                    // Fallback: use the remote pubkey as the user pubkey
+                    userPubkey = remotePubkey;
+                  }
 
                   localStorage.setItem(LS_REMOTE_PUBKEY, remotePubkey);
                   clearTimeout(timeout);
@@ -164,7 +203,7 @@ export function SignerProvider({ children }: { children: ReactNode }) {
                   resolve(uri);
                 }
               } catch {
-                // Not our message or decryption failed, keep listening
+                console.log('[NIP-46] Failed to parse decrypted content');
               }
             },
           },
