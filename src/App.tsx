@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Nav from './components/Nav';
+import HomePage from './pages/HomePage';
 import ShelfPage from './pages/ShelfPage';
 import BadgesPage from './pages/BadgesPage';
 import ClaimPage from './pages/ClaimPage';
@@ -10,7 +11,8 @@ export default function App() {
     <BrowserRouter basename="/app">
       <Nav />
       <Routes>
-        <Route path="/" element={<ShelfPage />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/p/:id" element={<ShelfPage />} />
         <Route path="/badges" element={<BadgesPage />} />
         <Route path="/claim" element={<ClaimPage />} />
         <Route path="/feed" element={<FeedPage />} />

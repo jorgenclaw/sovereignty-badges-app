@@ -156,7 +156,7 @@ export default function FeedPage() {
           {items.map((item) => (
             <Link
               key={item.id}
-              to={`/?npub=${item.recipientNpub}`}
+              to={`/p/${item.recipientNpub}`}
               className="block rounded-xl border border-border bg-surface p-4 hover:border-surface-light transition-colors"
             >
               <div className="flex items-center gap-3">
