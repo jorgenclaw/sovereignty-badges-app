@@ -21,12 +21,12 @@ export default function Nav() {
   return (
     <nav className="border-b border-border bg-surface sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 flex items-center justify-between h-14">
-        <NavLink
-          to="/"
+        <a
+          href="https://jorgenclaw.ai"
           className="text-lg font-semibold text-text-primary tracking-tight hover:text-track-agent transition-colors"
         >
           Sovereignty Badges
-        </NavLink>
+        </a>
         <div className="flex items-center gap-1">
           {links.map((link) => (
             <NavLink

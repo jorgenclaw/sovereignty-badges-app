@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { BADGES } from '../constants/badges';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { nsecEncode, npubEncode } from 'nostr-tools/nip19';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function HomePage() {
   const [input, setInput] = useState('');
@@ -15,6 +16,11 @@ export default function HomePage() {
   const [generated, setGenerated] = useState(false);
   const [npubCopied, setNpubCopied] = useState(false);
   const [nsecCopied, setNsecCopied] = useState(false);
+  const [pkHex, setPkHex] = useState('');
+  const [skHex, setSkHex] = useState('');
+  const [pkHexCopied, setPkHexCopied] = useState(false);
+  const [skHexCopied, setSkHexCopied] = useState(false);
+  const [showNsecQr, setShowNsecQr] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,18 +35,27 @@ export default function HomePage() {
     const pk = getPublicKey(sk);
     setNsec(nsecEncode(sk));
     setNpub(npubEncode(pk));
+    setPkHex(pk);
+    setSkHex(Array.from(sk).map(b => b.toString(16).padStart(2, '0')).join(''));
     setGenerated(true);
     setRevealed(false);
+    setShowNsecQr(false);
   }
 
-  function copyToClipboard(text: string, type: 'npub' | 'nsec') {
+  function copyToClipboard(text: string, type: 'npub' | 'nsec' | 'pkHex' | 'skHex') {
     navigator.clipboard.writeText(text).then(() => {
       if (type === 'npub') {
         setNpubCopied(true);
         setTimeout(() => setNpubCopied(false), 1500);
-      } else {
+      } else if (type === 'nsec') {
         setNsecCopied(true);
         setTimeout(() => setNsecCopied(false), 1500);
+      } else if (type === 'pkHex') {
+        setPkHexCopied(true);
+        setTimeout(() => setPkHexCopied(false), 1500);
+      } else {
+        setSkHexCopied(true);
+        setTimeout(() => setSkHexCopied(false), 1500);
       }
     });
   }
@@ -136,6 +151,10 @@ export default function HomePage() {
                     {npubCopied ? 'Copied!' : 'Copy npub'}
                   </button>
                 </div>
+                <div className="inline-block p-3 bg-white rounded-lg mt-2">
+                  <QRCodeSVG value={npub} size={180} />
+                </div>
+                <p className="text-text-secondary text-sm mt-1">Scan to share your public identity</p>
               </div>
 
               <div className="key-row">
@@ -155,6 +174,52 @@ export default function HomePage() {
                     onClick={() => copyToClipboard(nsec, 'nsec')}
                   >
                     {nsecCopied ? 'Copied!' : 'Copy nsec'}
+                  </button>
+                </div>
+                <div className="btn-row" style={{ marginTop: '0.5rem' }}>
+                  <button
+                    className="reveal-btn"
+                    onClick={() => setShowNsecQr(!showNsecQr)}
+                  >
+                    {showNsecQr ? 'Hide nsec QR' : 'Show nsec QR'}
+                  </button>
+                </div>
+                {showNsecQr && (
+                  <>
+                    <div className="inline-block p-3 bg-white rounded-lg mt-2">
+                      <QRCodeSVG value={nsec} size={180} />
+                    </div>
+                    <p className="text-text-secondary text-sm mt-1">&#9888;&#65039; Keep this private — scan to import into Amber or your key manager</p>
+                  </>
+                )}
+              </div>
+
+              <div className="key-row" style={{ marginTop: '1.5rem', borderTop: '1px solid #333', paddingTop: '1.5rem' }}>
+                <p className="text-text-secondary text-sm" style={{ marginBottom: '1rem' }}>
+                  These are the same keys in computer-readable (hex) format. Save them too — you may need them as you build Nostr tools and integrations.
+                </p>
+
+                <label>Public key (hex):</label>
+                <code>{pkHex}</code>
+                <div className="btn-row">
+                  <button
+                    className="copy-btn"
+                    onClick={() => copyToClipboard(pkHex, 'pkHex')}
+                  >
+                    {pkHexCopied ? 'Copied!' : 'Copy hex'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="key-row">
+                <label>Private key (hex) — NEVER share:</label>
+                <code className={revealed ? '' : 'secret'}>{skHex}</code>
+                <div className="btn-row">
+                  <button
+                    className="copy-btn"
+                    onClick={() => copyToClipboard(skHex, 'skHex')}
+                  >
+                    {skHexCopied ? 'Copied!' : 'Copy hex'}
                   </button>
                 </div>
               </div>
