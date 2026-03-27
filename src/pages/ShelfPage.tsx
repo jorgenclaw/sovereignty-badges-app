@@ -186,11 +186,22 @@ export default function ShelfPage() {
           </div>
 
           {/* Stats */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-4">
             <p className="text-text-secondary text-sm">
               {earnedIds?.size || 0} of {BADGES.length} badges earned
             </p>
           </div>
+
+          {/* Emoji strip */}
+          {earnedIds && earnedIds.size > 0 && (
+            <div className="flex flex-wrap gap-1.5 justify-center text-xl mb-6">
+              {sortedBadges
+                .filter((b) => earnedIds.has(b.id))
+                .map((b) => (
+                  <span key={b.id} title={b.name}>{b.emoji}</span>
+                ))}
+            </div>
+          )}
 
           {/* Badge grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
