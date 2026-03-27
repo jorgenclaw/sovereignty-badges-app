@@ -41,7 +41,7 @@ interface SignerState {
   connectUri: string | null;
 }
 
-const NIP46_RELAY = 'wss://relay.nsec.app';
+const NIP46_RELAY = 'wss://relay.damus.io';
 const APP_NAME = 'Sovereignty Badges';
 const APP_URL = 'https://sovereignty.jorgenclaw.ai/app';
 
