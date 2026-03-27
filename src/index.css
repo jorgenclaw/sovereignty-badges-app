@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-track-human: #f5a623;
+  --color-track-agent: #5b8dd9;
+  --color-track-shared: #888888;
+  --color-bg-dark: #0f1117;
+  --color-surface: #1a1b23;
+  --color-surface-light: #23242e;
+  --color-border: #2e303a;
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #9ca3af;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg-dark);
+  color: var(--color-text-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}

@@ -1,0 +1,20 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Nav from './components/Nav';
+import ShelfPage from './pages/ShelfPage';
+import BadgesPage from './pages/BadgesPage';
+import ClaimPage from './pages/ClaimPage';
+import FeedPage from './pages/FeedPage';
+
+export default function App() {
+  return (
+    <BrowserRouter basename="/app">
+      <Nav />
+      <Routes>
+        <Route path="/" element={<ShelfPage />} />
+        <Route path="/badges" element={<BadgesPage />} />
+        <Route path="/claim" element={<ClaimPage />} />
+        <Route path="/feed" element={<FeedPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
