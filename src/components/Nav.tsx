@@ -8,13 +8,23 @@ const links = [
   { to: '/feed', label: 'Feed' },
 ];
 
+const methodLabels: Record<string, string> = {
+  nip07: 'Extension',
+  'nip46-connect': 'NIP-46',
+  'nip46-bunker': 'Bunker',
+};
+
 export default function Nav() {
-  const { pubkey, connected, connecting, connect, disconnect } = useSigner();
+  const { pubkey, connected, connecting, signerMethod, openModal, disconnect } =
+    useSigner();
 
   return (
     <nav className="border-b border-border bg-surface sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 flex items-center justify-between h-14">
-        <NavLink to="/" className="text-lg font-semibold text-text-primary tracking-tight hover:text-track-agent transition-colors">
+        <NavLink
+          to="/"
+          className="text-lg font-semibold text-text-primary tracking-tight hover:text-track-agent transition-colors"
+        >
           Sovereignty Badges
         </NavLink>
         <div className="flex items-center gap-1">
@@ -40,6 +50,11 @@ export default function Nav() {
                 <span className="text-xs font-mono text-text-secondary">
                   {pubkey.slice(0, 8)}...
                 </span>
+                {signerMethod && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-light text-text-secondary border border-border">
+                    {methodLabels[signerMethod] || signerMethod}
+                  </span>
+                )}
                 <button
                   onClick={disconnect}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-surface-light/50 transition-colors"
@@ -49,7 +64,7 @@ export default function Nav() {
               </div>
             ) : (
               <button
-                onClick={connect}
+                onClick={openModal}
                 disabled={connecting}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium bg-track-agent/20 border border-track-agent/30 text-track-agent hover:bg-track-agent/30 transition-colors disabled:opacity-50"
               >

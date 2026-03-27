@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { SignerProvider } from './context/SignerContext';
 import Nav from './components/Nav';
+import ConnectionModal from './components/ConnectionModal';
 import HomePage from './pages/HomePage';
 import ShelfPage from './pages/ShelfPage';
 import BadgesPage from './pages/BadgesPage';
@@ -12,6 +13,7 @@ export default function App() {
     <SignerProvider>
       <BrowserRouter basename="/app">
         <Nav />
+        <ConnectionModal />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/p/:id" element={<ShelfPage />} />

@@ -36,7 +36,7 @@ async function resolveToHex(id: string): Promise<string> {
 
 export default function ShelfPage() {
   const { id } = useParams<{ id: string }>();
-  const { pubkey, connected, connect, signEvent } = useSigner();
+  const { pubkey, connected, openModal, signEvent } = useSigner();
   const [earnedIds, setEarnedIds] = useState<Set<string> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -139,8 +139,8 @@ export default function ShelfPage() {
     if (!earnedIds || earnedIds.size === 0) return;
 
     if (!connected) {
-      await connect();
-      // After connect, pubkey state updates async, so bail and let the user click again
+      openModal();
+      // After connect via modal, pubkey state updates async, so bail and let the user click again
       return;
     }
 
