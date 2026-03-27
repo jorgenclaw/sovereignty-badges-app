@@ -16,6 +16,8 @@ import {
 import type { NostrSigner } from '@nostrify/types';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { bytesToHex, hexToBytes } from 'nostr-tools/utils';
+import { SimplePool } from 'nostr-tools/pool';
+import { nip04 } from 'nostr-tools';
 
 export type SignerMethod = 'nip07' | 'nip46-connect' | 'nip46-bunker';
 
@@ -41,7 +43,9 @@ interface SignerState {
   connectUri: string | null;
 }
 
-const NIP46_RELAY = 'wss://relay.damus.io';
+// Use multiple relays for NIP-46 — Amber may respond on any of these
+const NIP46_RELAYS = ['wss://relay.damus.io', 'wss://relay.nsec.app', 'wss://nos.lol'];
+const NIP46_RELAY = NIP46_RELAYS[0]; // Primary for URI generation
 const APP_NAME = 'Sovereignty Badges';
 const APP_URL = 'https://sovereignty.jorgenclaw.ai/app';
 
@@ -118,59 +122,54 @@ export function SignerProvider({ children }: { children: ReactNode }) {
       const uri = `nostrconnect://${sessionPkHex}?relay=${encodeURIComponent(NIP46_RELAY)}&metadata=${encodeURIComponent(metadata)}`;
       setConnectUri(uri);
 
-      // Open relay and listen for the signer's connect response
-      const relay = new NRelay1(NIP46_RELAY);
-      relayRef.current = relay;
+      // Listen on multiple relays for Amber's NIP-46 response using SimplePool
+      const pool = new SimplePool();
 
-      // Listen for kind:24133 events addressed to our ephemeral pubkey
-      const controller = new AbortController();
-      const timeout = setTimeout(() => {
-        controller.abort();
-        setConnecting(false);
-      }, 120_000); // 2 minute timeout
+      return new Promise<string>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          pool.close(NIP46_RELAYS);
+          setConnecting(false);
+          reject(new Error('NIP-46 connection timed out'));
+        }, 120_000);
 
-      for await (const msg of relay.req(
-        [{ kinds: [24133], '#p': [sessionPkHex] }],
-        { signal: controller.signal },
-      )) {
-        if (msg[0] === 'EVENT') {
-          const event = msg[2];
-          // The remote signer's pubkey is the event author
-          const remotePubkey = event.pubkey;
+        pool.subscribeMany(
+          NIP46_RELAYS,
+          { kinds: [24133], '#p': [sessionPkHex], since: Math.floor(Date.now() / 1000) - 5 },
+          {
+            onevent: async (event) => {
+              const remotePubkey = event.pubkey;
+              try {
+                // Decrypt using raw nostr-tools nip04 with our session secret key
+                const decrypted = await nip04.decrypt(sessionSk, remotePubkey, event.content);
+                const response = JSON.parse(decrypted);
 
-          // Decrypt the content to check it's an ack/connect response
-          try {
-            const decrypted = await sessionSigner.nip04.decrypt(
-              remotePubkey,
-              event.content,
-            );
-            const response = JSON.parse(decrypted);
+                if (response.result === 'ack' || response.result) {
+                  // Connection established - create NConnectSigner on the primary relay
+                  const relay = new NRelay1(NIP46_RELAY);
+                  relayRef.current = relay;
 
-            if (response.result === 'ack' || response.result) {
-              // Connection established - create the NConnectSigner
-              const nip46Signer = new NConnectSigner({
-                relay,
-                pubkey: remotePubkey,
-                signer: sessionSigner,
-                timeout: 60_000,
-              });
+                  const nip46Signer = new NConnectSigner({
+                    relay,
+                    pubkey: remotePubkey,
+                    signer: sessionSigner,
+                    timeout: 60_000,
+                  });
 
-              // Get the actual user pubkey
-              const userPubkey = await nip46Signer.getPublicKey();
+                  const userPubkey = await nip46Signer.getPublicKey();
 
-              localStorage.setItem(LS_REMOTE_PUBKEY, remotePubkey);
-              clearTimeout(timeout);
-              finishConnect(userPubkey, 'nip46-connect', nip46Signer);
-              return uri;
-            }
-          } catch {
-            // Not our message or decryption failed, continue listening
-          }
-        }
-      }
-
-      clearTimeout(timeout);
-      return uri;
+                  localStorage.setItem(LS_REMOTE_PUBKEY, remotePubkey);
+                  clearTimeout(timeout);
+                  pool.close(NIP46_RELAYS);
+                  finishConnect(userPubkey, 'nip46-connect', nip46Signer);
+                  resolve(uri);
+                }
+              } catch {
+                // Not our message or decryption failed, keep listening
+              }
+            },
+          },
+        );
+      });
     } catch (err) {
       console.error('NIP-46 connect failed:', err);
       setConnecting(false);
