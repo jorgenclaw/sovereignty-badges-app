@@ -64,7 +64,7 @@ export default function HomePage() {
     <div className="max-w-3xl mx-auto px-4 py-16">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-text-primary mb-3">
-          Sovereignty Badges
+          Sovereignty Badges — Nostr App
         </h1>
         <p className="text-lg text-text-secondary max-w-xl mx-auto">
           Track your journey toward digital sovereignty. {BADGES.length} badges
