@@ -17,7 +17,8 @@ import type { NostrSigner } from '@nostrify/types';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { bytesToHex, hexToBytes } from 'nostr-tools/utils';
 import { SimplePool } from 'nostr-tools/pool';
-import { nip04, nip44 } from 'nostr-tools';
+import { nip04 } from 'nostr-tools';
+import * as nip44 from 'nostr-tools/nip44';
 
 export type SignerMethod = 'nip07' | 'nip46-connect' | 'nip46-bunker';
 
