@@ -7,6 +7,38 @@ import { useAuthor } from '../hooks/useAuthor';
 import { useBadgeAwards } from '../hooks/useBadgeAwards';
 import { useNostrQuery } from '../hooks/useNostr';
 
+/**
+ * Check if a badge is earned, handling the d-tag suffix mismatch.
+ * On-chain awards use e.g. "encrypted-comms" but BADGES constants use "encrypted-comms-human".
+ * We check the full id first, then strip the track suffix and check again.
+ */
+function isBadgeEarned(badgeId: string, earnedIds: Set<string> | undefined): boolean {
+  if (!earnedIds) return false;
+  if (earnedIds.has(badgeId)) return true;
+  // Strip -human / -agent suffix and check the base name
+  const base = badgeId.replace(/-(human|agent)$/, '');
+  if (base !== badgeId && earnedIds.has(base)) return true;
+  return false;
+}
+
+/**
+ * Check if a badge ID from the relay matches a BADGES constant ID,
+ * handling suffix mismatches in both directions.
+ */
+function isBadgePublished(badgeId: string, publishedIds: Set<string> | undefined): boolean {
+  if (!publishedIds) return false;
+  if (publishedIds.has(badgeId)) return true;
+  // The relay might store "encrypted-comms" but we need to match "encrypted-comms-human"
+  const base = badgeId.replace(/-(human|agent)$/, '');
+  if (base !== badgeId && publishedIds.has(base)) return true;
+  // Or the relay has the base and we're checking the suffixed version
+  for (const pid of publishedIds) {
+    const pBase = pid.replace(/-(human|agent)$/, '');
+    if (pBase === base) return true;
+  }
+  return false;
+}
+
 async function resolveToHex(id: string): Promise<string> {
   const trimmed = id.trim();
   if (trimmed.startsWith('npub1')) {
@@ -87,10 +119,16 @@ export default function ManageBadgesPage() {
     },
   );
 
-  // Initialize checkboxes from published profile badges
+  // Initialize checkboxes from published profile badges, mapping relay IDs to BADGES constant IDs
   useEffect(() => {
     if (!initialized && publishedBadgeIds && !profileBadgesLoading) {
-      setCheckedBadges(new Set(publishedBadgeIds));
+      const initial = new Set<string>();
+      for (const badge of BADGES) {
+        if (isBadgePublished(badge.id, publishedBadgeIds)) {
+          initial.add(badge.id);
+        }
+      }
+      setCheckedBadges(initial);
       setInitialized(true);
     }
   }, [publishedBadgeIds, profileBadgesLoading, initialized]);
@@ -266,9 +304,9 @@ export default function ManageBadgesPage() {
               {/* Badge list */}
               <div className="space-y-2 mb-6">
                 {sortedBadges.map((badge) => {
-                  const earned = earnedIds?.has(badge.id) ?? false;
+                  const earned = isBadgeEarned(badge.id, earnedIds);
                   const checked = checkedBadges.has(badge.id);
-                  const wasPublished = publishedBadgeIds?.has(badge.id) ?? false;
+                  const wasPublished = isBadgePublished(badge.id, publishedBadgeIds);
 
                   return (
                     <label
