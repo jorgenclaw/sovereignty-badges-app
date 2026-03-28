@@ -225,14 +225,14 @@ export default function ShelfPage() {
                   return (
                     <div
                       key={b.id}
-                      className="w-10 h-10 rounded-full bg-black flex items-center justify-center overflow-hidden"
+                      className="w-10 h-10 rounded-full overflow-hidden"
                       style={{ border: `2px solid ${ringColor}` }}
                       title={`${b.name}: ${b.description}`}
                     >
                       <img
                         src={`${BADGE_IMAGE_BASE}${b.id}.svg`}
                         alt={b.name}
-                        className="w-8 h-8 object-contain rounded-full"
+                        className="w-full h-full object-cover rounded-full"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none';
                           (e.target as HTMLImageElement).parentElement!.textContent = b.emoji;
