@@ -25,7 +25,7 @@ export default function BadgesPage() {
   ];
 
   function renderBadgeCard(badge: BadgeDef) {
-    const colors = TYPE_COLORS[badge.type];
+    const colors = TYPE_COLORS[badge.type] || TYPE_COLORS.human;
     return (
       <Link
         key={badge.id}
