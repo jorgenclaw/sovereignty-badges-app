@@ -230,7 +230,7 @@ export default function ShelfPage() {
                       title={`${b.name}: ${b.description}`}
                     >
                       <img
-                        src={`${BADGE_IMAGE_BASE}${b.id}.png`}
+                        src={`${BADGE_IMAGE_BASE}${b.id}.svg`}
                         alt={b.name}
                         className="w-8 h-8 object-contain rounded-full"
                         onError={(e) => {

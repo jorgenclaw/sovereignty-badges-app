@@ -38,7 +38,7 @@ export default function BadgeCard({ badge, earned }: BadgeCardProps) {
           title={`${badge.name}: ${badge.description}`}
         >
           <img
-            src={`${BADGE_IMAGE_BASE}${badge.id}.png`}
+            src={`${BADGE_IMAGE_BASE}${badge.id}.svg`}
             alt={badge.name}
             className="w-12 h-12 object-contain rounded-full"
             onError={(e) => {
