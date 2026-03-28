@@ -77,7 +77,7 @@ export function useBadgeDefinitions() {
         pool.close(RELAYS);
       }
     },
-    initialData: staticBadgesAsFallback,
+    placeholderData: staticBadgesAsFallback(),
     staleTime: 5 * 60_000, // 5 min cache
   });
 }
