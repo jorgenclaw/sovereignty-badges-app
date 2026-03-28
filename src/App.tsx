@@ -9,6 +9,7 @@ import ShelfPage from './pages/ShelfPage';
 import BadgesPage from './pages/BadgesPage';
 import ClaimPage from './pages/ClaimPage';
 import FeedPage from './pages/FeedPage';
+import ManageBadgesPage from './pages/ManageBadgesPage';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/badges" element={<BadgesPage />} />
             <Route path="/claim" element={<ClaimPage />} />
             <Route path="/feed" element={<FeedPage />} />
+            <Route path="/manage-badges" element={<ManageBadgesPage />} />
           </Routes>
         </BrowserRouter>
       </SignerProvider>

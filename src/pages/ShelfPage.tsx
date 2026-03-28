@@ -252,12 +252,12 @@ export default function ShelfPage() {
 
           {/* Manage badges link */}
           <div className="text-center mt-4">
-            <a
-              href="https://sovereignty.jorgenclaw.ai/manage-badges"
+            <Link
+              to="/manage-badges"
               className="text-text-secondary hover:text-text-primary text-xs transition-colors"
             >
               &#9881;&#65039; Manage Badges
-            </a>
+            </Link>
           </div>
         </>
       )}
