@@ -2,6 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { SimplePool } from 'nostr-tools/pool';
 import { BADGES, ISSUER_PUBKEY, RELAYS } from '../constants/badges';
 
+/** Extract leading emoji from a badge name like "📧 Encrypted Email" → "📧" */
+function extractLeadingEmoji(name: string): string {
+  const parts = name.split(' ');
+  return parts[0] && /\P{ASCII}/u.test(parts[0]) ? parts[0] : '';
+}
+
 export interface BadgeDef {
   id: string;        // d-tag
   name: string;      // from "name" tag
@@ -67,7 +73,7 @@ export function useBadgeDefinitions() {
             id: dTag,
             name: tags['name'] || dTag.replace(/-/g, ' '),
             description: tags['description'] || '',
-            emoji: tags['emoji'] || '',
+            emoji: tags['emoji'] || extractLeadingEmoji(tags['name'] || '') || '',
             type: (tags['type'] as 'human' | 'agent') || (dTag.includes('agent') ? 'agent' : 'human'),
             tier: (tags['tier'] as 'foundation' | 'sovereign') || 'foundation',
             image: ev.tags.find(t => t[0] === 'image')?.[1],
