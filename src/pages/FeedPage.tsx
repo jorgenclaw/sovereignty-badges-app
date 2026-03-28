@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
+import { useQuery } from '@tanstack/react-query';
 import { SimplePool } from 'nostr-tools/pool';
 import { BADGES, ISSUER_PUBKEY, RELAYS } from '../constants/badges';
 
@@ -27,23 +27,17 @@ function timeAgo(timestamp: number): string {
   return new Date(timestamp * 1000).toLocaleDateString();
 }
 
-export default function FeedPage() {
-  const [items, setItems] = useState<FeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    const pool = new SimplePool();
-
-    async function fetchFeed() {
+function useFeed() {
+  return useQuery({
+    queryKey: ['nostr', 'feed'],
+    queryFn: async (): Promise<FeedItem[]> => {
+      const pool = new SimplePool();
       try {
         const events = await pool.querySync(RELAYS, {
           kinds: [8],
           authors: [ISSUER_PUBKEY],
           limit: 50,
         });
-
-        if (cancelled) return;
 
         const feedItems: FeedItem[] = [];
 
@@ -80,10 +74,7 @@ export default function FeedPage() {
 
         feedItems.sort((a, b) => b.timestamp - a.timestamp);
 
-        if (cancelled) return;
-        setItems(feedItems);
-
-        // Fetch profiles
+        // Fetch profiles for all recipients
         const hexKeys = [...new Set(feedItems.map((i) => i.recipientHex))];
         if (hexKeys.length > 0) {
           const profiles = await pool.querySync(RELAYS, {
@@ -91,14 +82,11 @@ export default function FeedPage() {
             authors: hexKeys,
           });
 
-          if (cancelled) return;
-
           const profileMap = new Map<string, { name: string; picture?: string }>();
           for (const p of profiles) {
             try {
               const content = JSON.parse(p.content);
-              const existing = profileMap.get(p.pubkey);
-              if (!existing) {
+              if (!profileMap.has(p.pubkey)) {
                 profileMap.set(p.pubkey, {
                   name: content.display_name || content.name || '',
                   picture: content.picture,
@@ -109,27 +97,22 @@ export default function FeedPage() {
             }
           }
 
-          setItems((prev) =>
-            prev.map((item) => ({
-              ...item,
-              profile: profileMap.get(item.recipientHex) || item.profile,
-            }))
-          );
+          for (const item of feedItems) {
+            item.profile = profileMap.get(item.recipientHex);
+          }
         }
-      } catch (err) {
-        console.error('Feed fetch error:', err);
+
+        return feedItems;
       } finally {
-        if (!cancelled) setLoading(false);
+        pool.close(RELAYS);
       }
-    }
+    },
+    refetchInterval: 30_000,
+  });
+}
 
-    fetchFeed();
-
-    return () => {
-      cancelled = true;
-      pool.close(RELAYS);
-    };
-  }, []);
+export default function FeedPage() {
+  const { data: items = [], isLoading } = useFeed();
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -140,7 +123,7 @@ export default function FeedPage() {
         </p>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-12">
           <p className="text-text-secondary">Loading feed from relays...</p>
         </div>

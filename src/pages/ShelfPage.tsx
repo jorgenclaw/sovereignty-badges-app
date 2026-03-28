@@ -1,28 +1,23 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { SimplePool } from 'nostr-tools/pool';
 import { BADGES, ISSUER_PUBKEY, RELAYS } from '../constants/badges';
 import BadgeCard from '../components/BadgeCard';
 import { useSigner } from '../context/SignerContext';
-
-interface UserProfile {
-  name: string;
-  picture?: string;
-  nip05?: string;
-}
+import { useAuthor } from '../hooks/useAuthor';
+import { useBadgeAwards } from '../hooks/useBadgeAwards';
+import { useProfileBadges } from '../hooks/useProfileBadges';
 
 async function resolveToHex(id: string): Promise<string> {
   const trimmed = id.trim();
 
-  // If it starts with npub, decode directly
   if (trimmed.startsWith('npub1')) {
     const { type, data } = nip19.decode(trimmed);
     if (type !== 'npub') throw new Error('Invalid npub');
     return data as string;
   }
 
-  // Otherwise treat as NIP-05 name on jorgenclaw.ai
   const name = trimmed.replace(/^@/, '');
   const resp = await fetch(
     `https://jorgenclaw.ai/.well-known/nostr.json?name=${encodeURIComponent(name)}`
@@ -37,102 +32,36 @@ async function resolveToHex(id: string): Promise<string> {
 export default function ShelfPage() {
   const { id } = useParams<{ id: string }>();
   const { pubkey, connected, openModal, signEvent } = useSigner();
-  const [earnedIds, setEarnedIds] = useState<Set<string> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [resolvedHex, setResolvedHex] = useState('');
+  const [resolveError, setResolveError] = useState('');
+  const [resolving, setResolving] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [hasProfileBadges, setHasProfileBadges] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
 
-  const lookup = useCallback(async (identifier: string) => {
-    setError('');
-    setLoading(true);
-    setEarnedIds(null);
-    setProfile(null);
-    setHasProfileBadges(false);
-
-    try {
-      const hex = await resolveToHex(identifier);
-      setResolvedHex(hex);
-
-      const pool = new SimplePool();
-      const earned = new Set<string>();
-
-      try {
-        // Fetch badge awards, profile, and existing kind:30008 in parallel
-        const [events, profiles, profileBadges] = await Promise.all([
-          pool.querySync(RELAYS, {
-            kinds: [8],
-            authors: [ISSUER_PUBKEY],
-            '#p': [hex],
-          }),
-          pool.querySync(RELAYS, {
-            kinds: [0],
-            authors: [hex],
-            limit: 1,
-          }),
-          pool.querySync(RELAYS, {
-            kinds: [30008],
-            authors: [hex],
-            '#d': ['profile_badges'],
-            limit: 1,
-          }),
-        ]);
-
-        for (const ev of events) {
-          const aTag = ev.tags.find((t: string[]) => t[0] === 'a');
-          if (aTag) {
-            const parts = aTag[1].split(':');
-            const badgeId = parts[parts.length - 1];
-            earned.add(badgeId);
-          }
-          const dTag = ev.tags.find((t: string[]) => t[0] === 'd');
-          if (dTag) {
-            earned.add(dTag[1]);
-          }
-        }
-
-        // Check if user already has kind:30008 published
-        setHasProfileBadges(profileBadges.length > 0);
-
-        // Parse profile
-        if (profiles.length > 0) {
-          try {
-            const content = JSON.parse(profiles[0].content);
-            setProfile({
-              name: content.display_name || content.name || '',
-              picture: content.picture,
-              nip05: content.nip05,
-            });
-          } catch {
-            // ignore parse errors
-          }
-        }
-      } finally {
-        pool.close(RELAYS);
-      }
-
-      setEarnedIds(earned);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Could not resolve this identifier. Try an npub or a NIP-05 handle.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Resolve npub/NIP-05 to hex
   useEffect(() => {
-    if (id) {
-      lookup(decodeURIComponent(id));
-    }
-  }, [id, lookup]);
+    if (!id) return;
+    setResolving(true);
+    setResolveError('');
+    resolveToHex(decodeURIComponent(id))
+      .then(setResolvedHex)
+      .catch((err) =>
+        setResolveError(
+          err instanceof Error
+            ? err.message
+            : 'Could not resolve this identifier. Try an npub or a NIP-05 handle.'
+        )
+      )
+      .finally(() => setResolving(false));
+  }, [id]);
 
+  // TanStack Query hooks — enabled only after hex is resolved
+  const { data: profile } = useAuthor(resolvedHex || undefined);
+  const { data: earnedIds, isLoading: awardsLoading } = useBadgeAwards(resolvedHex || undefined);
+  const { data: hasProfileBadges = false } = useProfileBadges(resolvedHex || undefined);
+
+  const loading = resolving || awardsLoading;
   const isOwnShelf = connected && pubkey === resolvedHex;
 
   const publishProfileBadges = async () => {
@@ -140,7 +69,6 @@ export default function ShelfPage() {
 
     if (!connected) {
       openModal();
-      // After connect via modal, pubkey state updates async, so bail and let the user click again
       return;
     }
 
@@ -163,7 +91,6 @@ export default function ShelfPage() {
       } finally {
         pool.close(RELAYS);
       }
-      setHasProfileBadges(true);
       setPublishSuccess(true);
       setTimeout(() => setPublishSuccess(false), 5000);
     } catch (err) {
@@ -207,9 +134,9 @@ export default function ShelfPage() {
         <div className="text-center py-16">
           <p className="text-text-secondary">Loading badges from relays...</p>
         </div>
-      ) : error ? (
+      ) : resolveError ? (
         <div className="text-center py-16">
-          <p className="text-red-400 mb-4">{error}</p>
+          <p className="text-red-400 mb-4">{resolveError}</p>
           <Link to="/" className="text-track-agent text-sm">
             &larr; Try a different identifier
           </Link>
@@ -329,7 +256,7 @@ export default function ShelfPage() {
               href="https://sovereignty.jorgenclaw.ai/manage-badges"
               className="text-text-secondary hover:text-text-primary text-xs transition-colors"
             >
-              ⚙️ Manage Badges
+              &#9881;&#65039; Manage Badges
             </a>
           </div>
         </>
