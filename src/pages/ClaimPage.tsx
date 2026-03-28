@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { BADGES, BADGE_IMAGE_BASE, TRACK_COLORS, TIER_LABELS, ISSUER_PUBKEY } from '../constants/badges';
+import { BADGES, BADGE_IMAGE_BASE, TRACK_COLORS, TIER_LABELS } from '../constants/badges';
 import { useSigner } from '../context/SignerContext';
 
 const JORGENCLAW_NPUB = 'npub16pg5zadrrhseg2qjt9lwfcl50zcc8alnt7mnaend3j04wjz4gnjqn6efzc';
