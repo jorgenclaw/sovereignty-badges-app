@@ -17,7 +17,7 @@ import type { NostrSigner } from '@nostrify/types';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { bytesToHex, hexToBytes } from 'nostr-tools/utils';
 import { SimplePool } from 'nostr-tools/pool';
-import { nip04 } from 'nostr-tools';
+import { nip04, nip44 } from 'nostr-tools';
 
 export type SignerMethod = 'nip07' | 'nip46-connect' | 'nip46-bunker';
 
@@ -150,18 +150,36 @@ export function SignerProvider({ children }: { children: ReactNode }) {
               const remotePubkey = event.pubkey;
               console.log('[NIP-46] Received kind:24133 from', remotePubkey.slice(0, 12) + '...');
 
-              // Try NIP-04 decryption first (most common), then try as plain JSON
+              // Try NIP-44 first (Amber default), then NIP-04, then plain JSON
               let decrypted: string | null = null;
+
+              // NIP-44 decryption
               try {
-                decrypted = await nip04.decrypt(sessionSkHex, remotePubkey, event.content);
-              } catch (e1) {
-                console.log('[NIP-46] NIP-04 decrypt failed, trying plain parse');
+                const conversationKey = nip44.v2.utils.getConversationKey(sessionSk, remotePubkey);
+                decrypted = nip44.v2.decrypt(event.content, conversationKey);
+                console.log('[NIP-46] NIP-44 decrypt succeeded');
+              } catch (e44) {
+                console.log('[NIP-46] NIP-44 decrypt failed:', (e44 as Error).message?.slice(0, 50));
+              }
+
+              // NIP-04 fallback
+              if (!decrypted) {
                 try {
-                  // Some signers send unencrypted or differently formatted responses
+                  decrypted = await nip04.decrypt(sessionSkHex, remotePubkey, event.content);
+                  console.log('[NIP-46] NIP-04 decrypt succeeded');
+                } catch (e04) {
+                  console.log('[NIP-46] NIP-04 decrypt failed:', (e04 as Error).message?.slice(0, 50));
+                }
+              }
+
+              // Plain JSON fallback
+              if (!decrypted) {
+                try {
                   JSON.parse(event.content);
                   decrypted = event.content;
+                  console.log('[NIP-46] Plain JSON parse succeeded');
                 } catch {
-                  console.log('[NIP-46] Not parseable either, skipping');
+                  console.log('[NIP-46] All decryption methods failed, skipping event');
                   return;
                 }
               }
