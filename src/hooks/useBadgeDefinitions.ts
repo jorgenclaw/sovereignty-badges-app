@@ -30,10 +30,22 @@ export function useBadgeDefinitions() {
     queryFn: async () => {
       const pool = new SimplePool();
       try {
-        const events = await pool.querySync(RELAYS, {
+        const rawEvents = await pool.querySync(RELAYS, {
           kinds: [30009],
           authors: [ISSUER_PUBKEY],
         });
+
+        // Deduplicate by d-tag — keep only the most recent event per d-tag
+        const latestByDTag = new Map<string, typeof rawEvents[0]>();
+        for (const event of rawEvents) {
+          const dtag = event.tags.find(t => t[0] === 'd')?.[1];
+          if (!dtag) continue;
+          const existing = latestByDTag.get(dtag);
+          if (!existing || event.created_at > existing.created_at) {
+            latestByDTag.set(dtag, event);
+          }
+        }
+        const events = Array.from(latestByDTag.values());
 
         const badges: BadgeDef[] = [];
         for (const ev of events) {
@@ -43,6 +55,10 @@ export function useBadgeDefinitions() {
 
           // Skip retired badges
           if (ev.tags.some(t => t[0] === 'status' && t[1] === 'retired')) continue;
+
+          // Skip old events without a type tag (pre-rebuild artifacts)
+          const typeTag = ev.tags.find(t => t[0] === 'type')?.[1];
+          if (typeTag && typeTag !== 'human' && typeTag !== 'agent') continue;
 
           const dTag = tags['d'];
           if (!dTag) continue;
