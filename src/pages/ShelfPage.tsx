@@ -210,6 +210,9 @@ export default function ShelfPage() {
             <p className="text-text-secondary text-sm">
               {earnedIds?.size || 0} of {BADGES.length} badges earned
             </p>
+            <p className="text-text-secondary/60 text-xs mt-1">
+              Anyone's badge shelf is publicly viewable.
+            </p>
           </div>
 
           {/* Emoji strip */}

@@ -242,6 +242,9 @@ export default function ClaimPage() {
             <p className="text-xs text-text-secondary/60">
               Badge claims are verified via Nostr DM. Jorgenclaw checks DMs 4× daily.
             </p>
+            <p className="text-xs text-text-secondary/60 mt-1">
+              Open to anyone — you don't need a jorgenclaw.ai account to claim badges.
+            </p>
           </div>
         </div>
       </div>

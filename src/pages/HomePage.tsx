@@ -70,6 +70,9 @@ export default function HomePage() {
           Track your journey toward digital sovereignty. {BADGES.length} badges
           across Human, Agent, and Shared tracks.
         </p>
+        <p className="text-sm text-text-secondary/80 mt-3 max-w-xl mx-auto">
+          Open to all Nostr users — any npub can earn and display badges. No registration required.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="max-w-xl mx-auto mb-6">
