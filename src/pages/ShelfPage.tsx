@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { SimplePool } from 'nostr-tools/pool';
-import { BADGES, ISSUER_PUBKEY, RELAYS, TRACK_COLORS, BADGE_IMAGE_BASE } from '../constants/badges';
+import { BADGES, ISSUER_PUBKEY, RELAYS, TRACK_COLORS, TYPE_COLORS, BADGE_IMAGE_BASE } from '../constants/badges';
 import BadgeCard from '../components/BadgeCard';
 import { useSigner } from '../context/SignerContext';
 import { useAuthor } from '../hooks/useAuthor';
@@ -235,7 +235,9 @@ export default function ShelfPage() {
               {sortedBadges
                 .filter((b) => isBadgeEarned(b.id, earnedIds))
                 .map((b) => {
-                  const ringColor = TRACK_COLORS[b.track].border;
+                  const ringColor = (b.track === 'human' || b.track === 'agent')
+                    ? TYPE_COLORS[b.track].border
+                    : TRACK_COLORS[b.track].border;
                   return (
                     <div
                       key={b.id}

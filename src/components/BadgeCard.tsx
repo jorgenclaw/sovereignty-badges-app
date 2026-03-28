@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { BadgeDef } from '../constants/badges';
-import { BADGE_IMAGE_BASE, TRACK_COLORS, TIER_LABELS } from '../constants/badges';
+import { BADGE_IMAGE_BASE, TRACK_COLORS, TIER_LABELS, TYPE_COLORS } from '../constants/badges';
 
 interface BadgeCardProps {
   badge: BadgeDef;
@@ -15,8 +15,23 @@ const verificationPills: Record<string, { label: string; color: string }> = {
   pay: { label: 'Pay', color: 'text-purple-400 bg-purple-400/10' },
 };
 
+/**
+ * Resolve the color set for a badge.
+ * Works with old-style badges (track: 'human' | 'agent' | 'both')
+ * and new-style badges that might have a `type` field.
+ */
+function getTrackColor(badge: BadgeDef) {
+  // Use TYPE_COLORS for human/agent (new style orange/blue)
+  const key = badge.track;
+  if (key === 'human' || key === 'agent') {
+    return TYPE_COLORS[key];
+  }
+  // Fallback for 'both' / shared
+  return TRACK_COLORS[key] || TRACK_COLORS.both;
+}
+
 export default function BadgeCard({ badge, earned, isOwnShelf }: BadgeCardProps) {
-  const trackColor = TRACK_COLORS[badge.track];
+  const trackColor = getTrackColor(badge);
   const pill = verificationPills[badge.verification];
 
   return (
@@ -55,9 +70,11 @@ export default function BadgeCard({ badge, earned, isOwnShelf }: BadgeCardProps)
           >
             {trackColor.label}
           </span>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${pill.color}`}>
-            {pill.label}
-          </span>
+          {pill && (
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${pill.color}`}>
+              {pill.label}
+            </span>
+          )}
         </div>
       </div>
 

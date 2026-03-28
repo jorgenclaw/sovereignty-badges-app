@@ -50,6 +50,12 @@ export const TRACK_COLORS = {
   both: { bg: 'rgba(120,120,120,0.15)', text: '#888', border: '#888', label: 'Shared' },
 };
 
+/** New type-based colors (no 'both'/'shared') — used by BadgesPage and BadgeCard */
+export const TYPE_COLORS: Record<'human' | 'agent', { border: string; text: string; bg: string; label: string }> = {
+  human: { border: '#F97316', text: '#F97316', bg: 'rgba(249,115,22,0.1)', label: 'Human' },
+  agent: { border: '#3B82F6', text: '#3B82F6', bg: 'rgba(59,130,246,0.1)', label: 'Agent' },
+};
+
 export const TIER_LABELS = ['Seed', 'Root', 'Branch', 'Crown'];
 
 export const RELAYS = [
