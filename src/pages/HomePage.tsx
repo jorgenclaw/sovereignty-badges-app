@@ -3,11 +3,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { BADGES } from '../constants/badges';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { nsecEncode, npubEncode } from 'nostr-tools/nip19';
+import { nip19 } from 'nostr-tools';
 import { QRCodeSVG } from 'qrcode.react';
+import { useSigner } from '../context/SignerContext';
 
 export default function HomePage() {
   const [input, setInput] = useState('');
   const navigate = useNavigate();
+  const { pubkey, connected } = useSigner();
 
   // Keypair generator state
   const [nsec, setNsec] = useState('');
@@ -101,6 +104,24 @@ export default function HomePage() {
         >
           See an example shelf &darr;
         </Link>
+
+        {connected && pubkey && (
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <span className="text-text-secondary/60 text-xs">&mdash; or since you're logged in &mdash;</span>
+            <Link
+              to={`/p/${nip19.npubEncode(pubkey)}`}
+              className="text-track-agent hover:text-track-agent/80 text-sm font-medium transition-colors"
+            >
+              See my badge shelf &rarr;
+            </Link>
+            <Link
+              to="/manage-badges"
+              className="text-track-agent hover:text-track-agent/80 text-sm font-medium transition-colors"
+            >
+              Manage my badge shelf &rarr;
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* New to Nostr? Start here. */}

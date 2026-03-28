@@ -9,6 +9,20 @@ import { useAuthor } from '../hooks/useAuthor';
 import { useBadgeAwards } from '../hooks/useBadgeAwards';
 import { useProfileBadges } from '../hooks/useProfileBadges';
 
+/**
+ * Check if a badge is earned, handling the d-tag suffix mismatch.
+ * On-chain awards use e.g. "encrypted-comms" but BADGES constants use "encrypted-comms-human".
+ * We check the full id first, then strip the track suffix and check again.
+ */
+function isBadgeEarned(badgeId: string, earnedIds: Set<string> | undefined): boolean {
+  if (!earnedIds) return false;
+  if (earnedIds.has(badgeId)) return true;
+  // Strip -human / -agent suffix and check the base name
+  const base = badgeId.replace(/-(human|agent)$/, '');
+  if (base !== badgeId && earnedIds.has(base)) return true;
+  return false;
+}
+
 async function resolveToHex(id: string): Promise<string> {
   const trimmed = id.trim();
 
@@ -219,7 +233,7 @@ export default function ShelfPage() {
           {earnedIds && earnedIds.size > 0 && (
             <div className="flex flex-wrap gap-2.5 justify-center mb-6">
               {sortedBadges
-                .filter((b) => earnedIds.has(b.id))
+                .filter((b) => isBadgeEarned(b.id, earnedIds))
                 .map((b) => {
                   const ringColor = TRACK_COLORS[b.track].border;
                   return (
@@ -250,7 +264,8 @@ export default function ShelfPage() {
               <BadgeCard
                 key={badge.id}
                 badge={badge}
-                earned={earnedIds?.has(badge.id) ?? false}
+                earned={isBadgeEarned(badge.id, earnedIds)}
+                isOwnShelf={isOwnShelf}
               />
             ))}
           </div>

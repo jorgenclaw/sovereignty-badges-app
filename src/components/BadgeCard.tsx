@@ -5,6 +5,7 @@ import { BADGE_IMAGE_BASE, TRACK_COLORS, TIER_LABELS } from '../constants/badges
 interface BadgeCardProps {
   badge: BadgeDef;
   earned?: boolean;
+  isOwnShelf?: boolean;
 }
 
 const verificationPills: Record<string, { label: string; color: string }> = {
@@ -14,7 +15,7 @@ const verificationPills: Record<string, { label: string; color: string }> = {
   pay: { label: 'Pay', color: 'text-purple-400 bg-purple-400/10' },
 };
 
-export default function BadgeCard({ badge, earned }: BadgeCardProps) {
+export default function BadgeCard({ badge, earned, isOwnShelf }: BadgeCardProps) {
   const trackColor = TRACK_COLORS[badge.track];
   const pill = verificationPills[badge.verification];
 
@@ -67,14 +68,11 @@ export default function BadgeCard({ badge, earned }: BadgeCardProps) {
         <span className="text-xs text-text-secondary">
           Tier {badge.tier}: {TIER_LABELS[badge.tier]}
         </span>
-        {earned === false ? (
-          <Link
-            to={`/claim?badge=${badge.id}`}
-            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-surface-light text-text-primary hover:bg-border transition-colors"
-          >
-            Claim &rarr;
-          </Link>
-        ) : earned === true ? (
+        {earned && isOwnShelf ? (
+          <span className="text-xs font-medium text-green-400/70 cursor-default">
+            On your shelf &#10003;
+          </span>
+        ) : earned ? (
           <span className="text-xs font-medium text-green-400">Earned</span>
         ) : (
           <Link
