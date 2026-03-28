@@ -4,7 +4,6 @@ import { useSigner } from '../context/SignerContext';
 const links = [
   { to: '/', label: 'Home' },
   { to: '/badges', label: 'Badges' },
-  { to: '/claim', label: 'Claim' },
   { to: '/feed', label: 'Feed' },
   { to: '/manage-badges', label: '\u2699\uFE0F' },
 ];
