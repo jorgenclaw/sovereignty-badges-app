@@ -342,7 +342,12 @@ export function SignerProvider({ children }: { children: ReactNode }) {
               signer: sessionSigner,
               timeout: 60_000,
             });
-            const pk = await nip46Signer.getPublicKey();
+            let pk: string;
+            try {
+              pk = await nip46Signer.getPublicKey();
+            } catch {
+              pk = localStorage.getItem(LS_PUBKEY) || remotePubkey;
+            }
             signerRef.current = nip46Signer;
             setPubkey(pk);
             setConnected(true);
@@ -351,6 +356,7 @@ export function SignerProvider({ children }: { children: ReactNode }) {
         } else if (method === 'nip46-connect') {
           const storedSk = localStorage.getItem(LS_SESSION_SK);
           const remotePubkey = localStorage.getItem(LS_REMOTE_PUBKEY);
+          const storedPubkey = localStorage.getItem(LS_PUBKEY);
           if (storedSk && remotePubkey) {
             const sessionSigner = new NSecSigner(hexToBytes(storedSk));
             const relay = new NRelay1(NIP46_RELAY);
@@ -361,7 +367,13 @@ export function SignerProvider({ children }: { children: ReactNode }) {
               signer: sessionSigner,
               timeout: 60_000,
             });
-            const pk = await nip46Signer.getPublicKey();
+            // Use stored pubkey as fallback — getPublicKey may fail if relay is slow
+            let pk: string;
+            try {
+              pk = await nip46Signer.getPublicKey();
+            } catch {
+              pk = storedPubkey || remotePubkey;
+            }
             signerRef.current = nip46Signer;
             setPubkey(pk);
             setConnected(true);
