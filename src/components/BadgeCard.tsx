@@ -32,11 +32,15 @@ export default function BadgeCard({ badge, earned }: BadgeCardProps) {
       }
     >
       <div className="flex items-start justify-between mb-3">
-        <div className="w-12 h-12 rounded-lg bg-surface-light flex items-center justify-center overflow-hidden">
+        <div
+          className="w-16 h-16 rounded-full bg-black flex items-center justify-center overflow-hidden"
+          style={{ border: `3px solid ${trackColor.border}` }}
+          title={`${badge.name}: ${badge.description}`}
+        >
           <img
             src={`${BADGE_IMAGE_BASE}${badge.id}.png`}
             alt={badge.name}
-            className="w-10 h-10 object-contain"
+            className="w-12 h-12 object-contain rounded-full"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
               (e.target as HTMLImageElement).parentElement!.textContent = badge.emoji;

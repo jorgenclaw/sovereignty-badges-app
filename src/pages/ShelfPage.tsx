@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { SimplePool } from 'nostr-tools/pool';
-import { BADGES, ISSUER_PUBKEY, RELAYS } from '../constants/badges';
+import { BADGES, ISSUER_PUBKEY, RELAYS, TRACK_COLORS, BADGE_IMAGE_BASE } from '../constants/badges';
 import BadgeCard from '../components/BadgeCard';
 import { useSigner } from '../context/SignerContext';
 import { useAuthor } from '../hooks/useAuthor';
@@ -217,12 +217,30 @@ export default function ShelfPage() {
 
           {/* Emoji strip */}
           {earnedIds && earnedIds.size > 0 && (
-            <div className="flex flex-wrap gap-1.5 justify-center text-xl mb-6">
+            <div className="flex flex-wrap gap-2.5 justify-center mb-6">
               {sortedBadges
                 .filter((b) => earnedIds.has(b.id))
-                .map((b) => (
-                  <span key={b.id} title={b.name}>{b.emoji}</span>
-                ))}
+                .map((b) => {
+                  const ringColor = TRACK_COLORS[b.track].border;
+                  return (
+                    <div
+                      key={b.id}
+                      className="w-10 h-10 rounded-full bg-black flex items-center justify-center overflow-hidden"
+                      style={{ border: `2px solid ${ringColor}` }}
+                      title={`${b.name}: ${b.description}`}
+                    >
+                      <img
+                        src={`${BADGE_IMAGE_BASE}${b.id}.png`}
+                        alt={b.name}
+                        className="w-8 h-8 object-contain rounded-full"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).parentElement!.textContent = b.emoji;
+                        }}
+                      />
+                    </div>
+                  );
+                })}
             </div>
           )}
 
