@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { nip19 } from 'nostr-tools';
 import { SimplePool } from 'nostr-tools/pool';
-import { BADGES, ISSUER_PUBKEY, RELAYS } from '../constants/badges';
+import { ISSUER_PUBKEY, RELAYS } from '../constants/badges';
+import { useBadgeDefinitions } from '../hooks/useBadgeDefinitions';
 import { useSigner } from '../context/SignerContext';
 import { useAuthor } from '../hooks/useAuthor';
 import { useBadgeAwards } from '../hooks/useBadgeAwards';
@@ -59,6 +60,7 @@ async function resolveToHex(id: string): Promise<string> {
 
 export default function ManageBadgesPage() {
   const { pubkey, connected, openModal, signEvent } = useSigner();
+  const { data: badges = [], isLoading: badgesLoading } = useBadgeDefinitions();
 
   const [inputValue, setInputValue] = useState('');
   const [resolvedHex, setResolvedHex] = useState('');
@@ -123,7 +125,7 @@ export default function ManageBadgesPage() {
   useEffect(() => {
     if (!initialized && publishedBadgeIds && !profileBadgesLoading) {
       const initial = new Set<string>();
-      for (const badge of BADGES) {
+      for (const badge of badges) {
         if (isBadgePublished(badge.id, publishedBadgeIds)) {
           initial.add(badge.id);
         }
@@ -133,18 +135,19 @@ export default function ManageBadgesPage() {
     }
   }, [publishedBadgeIds, profileBadgesLoading, initialized]);
 
-  const loading = awardsLoading || profileBadgesLoading;
+  const loading = awardsLoading || profileBadgesLoading || badgesLoading;
 
   // Sort badges same as ShelfPage
-  const trackOrder = { human: 0, agent: 1, both: 2 };
+  const typeOrder = { human: 0, agent: 1 };
+  const tierOrder = { foundation: 0, sovereign: 1 };
   const sortedBadges = useMemo(
     () =>
-      [...BADGES].sort((a, b) => {
-        const trackDiff = trackOrder[a.track] - trackOrder[b.track];
-        if (trackDiff !== 0) return trackDiff;
-        return a.tier - b.tier;
+      [...badges].sort((a, b) => {
+        const typeDiff = typeOrder[a.type] - typeOrder[b.type];
+        if (typeDiff !== 0) return typeDiff;
+        return tierOrder[a.tier] - tierOrder[b.tier];
       }),
-    [],
+    [badges],
   );
 
   const toggleBadge = (id: string) => {

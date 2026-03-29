@@ -4,7 +4,6 @@ import { BADGES, BADGE_IMAGE_BASE, TRACK_COLORS, TIER_LABELS } from '../constant
 import { useSigner } from '../context/SignerContext';
 
 const JORGENCLAW_NPUB = 'npub16pg5zadrrhseg2qjt9lwfcl50zcc8alnt7mnaend3j04wjz4gnjqn6efzc';
-const PRIMAL_DM_URL = `https://primal.net/messages/${JORGENCLAW_NPUB}`;
 
 export default function ClaimPage() {
   const [searchParams] = useSearchParams();
@@ -229,18 +228,10 @@ export default function ClaimPage() {
               >
                 {copied ? 'Copied!' : 'Copy Message'}
               </button>
-              <a
-                href={PRIMAL_DM_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2.5 rounded-xl border border-track-agent text-track-agent font-medium text-sm hover:bg-track-agent/10 transition-colors"
-              >
-                Open in Primal &rarr;
-              </a>
             </div>
 
             <p className="text-xs text-text-secondary/60">
-              Badge claims are verified via Nostr DM. Jorgenclaw checks DMs 4× daily.
+              Badge claims are processed automatically. You'll receive a confirmation DM shortly after submitting.
             </p>
             <p className="text-xs text-text-secondary/60 mt-1">
               Open to anyone — you don't need a jorgenclaw.ai account to claim badges.

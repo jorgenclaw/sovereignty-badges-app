@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { nip19 } from 'nostr-tools';
 import { useBadgeDefinitions } from '../hooks/useBadgeDefinitions';
 import type { BadgeDef } from '../hooks/useBadgeDefinitions';
 import { TYPE_COLORS, BADGE_IMAGE_BASE } from '../constants/badges';
+import { useSigner } from '../context/SignerContext';
 
 type TypeFilter = 'all' | 'human' | 'agent';
 
 export default function BadgesPage() {
   const { data: badges = [], isLoading } = useBadgeDefinitions();
+  const { pubkey, connected } = useSigner();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
 
   const filtered = badges.filter((b) => {
@@ -137,6 +140,17 @@ export default function BadgesPage() {
             </p>
           )}
         </>
+      )}
+
+      {connected && pubkey && (
+        <div className="text-center mt-10">
+          <Link
+            to={`/p/${nip19.npubEncode(pubkey)}`}
+            className="inline-block px-5 py-2.5 rounded-xl bg-track-agent text-white font-medium text-sm hover:bg-track-agent/80 transition-colors"
+          >
+            View my badge shelf &rarr;
+          </Link>
+        </div>
       )}
     </div>
   );
