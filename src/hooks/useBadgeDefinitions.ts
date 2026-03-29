@@ -16,6 +16,9 @@ export interface BadgeDef {
   type: 'human' | 'agent'; // from "type" tag
   tier: 'foundation' | 'sovereign'; // from "tier" tag
   image?: string;    // from "image" tag
+  verification?: 'honor' | 'prove' | 'auto' | 'pay'; // claim verification type
+  verificationHint?: string;
+  track?: string;    // backward compat with old constants
 }
 
 /** Convert the static BADGES constant into BadgeDef[] as fallback data */

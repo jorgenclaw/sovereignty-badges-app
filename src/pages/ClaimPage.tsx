@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { BADGES, BADGE_IMAGE_BASE, TRACK_COLORS, TIER_LABELS } from '../constants/badges';
+import { BADGE_IMAGE_BASE, TYPE_COLORS } from '../constants/badges';
+import { useBadgeDefinitions } from '../hooks/useBadgeDefinitions';
 import { useSigner } from '../context/SignerContext';
 
 const JORGENCLAW_NPUB = 'npub16pg5zadrrhseg2qjt9lwfcl50zcc8alnt7mnaend3j04wjz4gnjqn6efzc';
@@ -8,7 +9,8 @@ const JORGENCLAW_NPUB = 'npub16pg5zadrrhseg2qjt9lwfcl50zcc8alnt7mnaend3j04wjz4gn
 export default function ClaimPage() {
   const [searchParams] = useSearchParams();
   const badgeId = searchParams.get('badge');
-  const badge = badgeId ? BADGES.find((b) => b.id === badgeId) : null;
+  const { data: badges = [], isLoading: badgesLoading } = useBadgeDefinitions();
+  const badge = badgeId ? badges.find((b) => b.id === badgeId) : null;
   const { pubkey, connected } = useSigner();
 
   const [npub, setNpub] = useState('');
@@ -45,6 +47,14 @@ export default function ClaimPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  if (badgesLoading && !badge) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8 text-center">
+        <p className="text-text-secondary">Loading badge details...</p>
+      </div>
+    );
+  }
+
   if (!badge) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
@@ -62,7 +72,7 @@ export default function ClaimPage() {
     );
   }
 
-  const trackColor = TRACK_COLORS[badge.track];
+  const trackColor = TYPE_COLORS[badge.type] || TYPE_COLORS.human;
 
   const canClaim = () => {
     if (!npub.trim().startsWith('npub1') && !connected) return false;
@@ -106,7 +116,7 @@ export default function ClaimPage() {
                 {trackColor.label}
               </span>
               <span className="text-xs px-2 py-0.5 rounded-full font-medium text-text-secondary bg-surface">
-                Tier {badge.tier}: {TIER_LABELS[badge.tier]}
+                Tier: {badge.tier}
               </span>
             </div>
           </div>
